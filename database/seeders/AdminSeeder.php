@@ -11,8 +11,8 @@ class AdminSeeder extends Seeder
     {
         // Change this password right after the first login.
         Admin::firstOrCreate(
-            ['email' => 'admin@tryoutku.test'],
-            ['name' => 'Administrator', 'password' => 'password'],
+            ['email' => 'admin@HikmahCollage.id'],
+            ['name' => 'Administrator', 'password' => bcrypt('AdminTryoutHC')]
         );
     }
 }

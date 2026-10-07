@@ -19,6 +19,7 @@
             <div><dt class="inline font-bold text-slate-500">Nomor WhatsApp:</dt> <dd class="inline text-slate-800">{{ $student->phone }}</dd></div>
             <div><dt class="inline font-bold text-slate-500">Asal daerah:</dt> <dd class="inline text-slate-800">{{ $student->region }}</dd></div>
             <div><dt class="inline font-bold text-slate-500">Sekolah:</dt> <dd class="inline text-slate-800">{{ $student->school }}</dd></div>
+            <div><dt class="inline font-bold text-slate-500">Jenjang Kelas:</dt> <dd class="inline text-slate-800">{{ $student->grade_level }}</dd></div>
             <div><dt class="inline font-bold text-slate-500">Tanggal lahir:</dt> <dd class="inline text-slate-800">{{ \Illuminate\Support\Carbon::parse($student->dob)->format('d M Y') }}</dd></div>
             <div><dt class="inline font-bold text-slate-500">Usia:</dt> <dd class="inline text-slate-800">{{ $student->age }} tahun</dd></div>
             <div><dt class="inline font-bold text-slate-500">Jenis kelamin:</dt> <dd class="inline text-slate-800">{{ $student->gender }}</dd></div>

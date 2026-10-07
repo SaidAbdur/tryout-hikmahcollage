@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('phone');
             $table->string('region');
             $table->string('school');
+            $table->string('grade_level');
             $table->date('dob');
             $table->integer('age');
             $table->enum('gender', ['Laki-laki', 'Perempuan']);

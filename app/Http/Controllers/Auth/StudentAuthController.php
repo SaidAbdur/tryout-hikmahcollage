@@ -25,6 +25,7 @@ class StudentAuthController extends Controller
             'phone' => ['required', 'string', 'max:30'],
             'region' => ['required', 'string', 'max:255'],
             'school' => ['required', 'string', 'max:255'],
+            'grade_level' => ['required', 'in:Kelas 10,Kelas 11,Kelas 12'],
             'dob' => ['required', 'date', 'before:today'],
             'gender' => ['required', 'in:Laki-laki,Perempuan'],
             'parent_name' => ['required', 'string', 'max:255'],
