@@ -2,40 +2,45 @@
 @section('title', 'Beranda')
 
 @section('content')
-<div class="card flex flex-col gap-6 bg-gradient-to-r from-violet-500 to-sky-400 text-white sm:flex-row sm:items-center sm:justify-between">
+<div class="card flex flex-col gap-6 border-0 bg-gradient-to-br from-blue-800 via-blue-700 to-emerald-600 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
     <div>
         <h1 class="font-display text-3xl font-semibold">Halo, {{ Str::before($student->name, ' ') }}! 👋</h1>
-        <p class="mt-1 text-violet-50">Pilih mata pelajaran dan mulai tryout hari ini.</p>
-        <span class="chip mt-3 bg-white/25 text-white">Student ID {{ $student->student_id }}</span>
+        <p class="mt-1 text-blue-100">Pilih mata pelajaran dan mulai tryout hari ini.</p>
+        <span class="chip mt-3 bg-lime-300 text-blue-950">Student ID {{ $student->student_id }}</span>
     </div>
     <div class="grid grid-cols-3 gap-3 text-center">
         @foreach ([['Selesai', $stats['done']], ['Rata-rata', rtrim(rtrim(number_format($stats['avg'], 1), '0'), '.')], ['Terbaik', rtrim(rtrim(number_format($stats['best'], 1), '0'), '.')]] as [$label, $value])
-            <div class="rounded-2xl bg-white/20 px-4 py-3">
+            <div class="rounded-lg bg-white/15 px-4 py-3">
                 <p class="font-display text-2xl font-semibold">{{ $value }}</p>
-                <p class="text-xs font-bold text-violet-50">{{ $label }}</p>
+                <p class="text-xs font-bold text-blue-100">{{ $label }}</p>
             </div>
         @endforeach
     </div>
 </div>
 
 @php
-    $tints = ['bg-violet-100 text-violet-600', 'bg-sky-100 text-sky-600', 'bg-amber-100 text-amber-600', 'bg-emerald-100 text-emerald-600', 'bg-rose-100 text-rose-600'];
+    $tints = ['bg-blue-50 text-blue-700', 'bg-lime-100 text-lime-800', 'bg-amber-100 text-amber-700', 'bg-emerald-100 text-emerald-700', 'bg-sky-100 text-sky-700'];
     $n = 0;
 @endphp
 
-@foreach (['mandatory' => 'Mata pelajaran wajib', 'elective' => 'Mata pelajaran pilihan'] as $type => $title)
-    <h2 class="mb-4 mt-10 font-display text-2xl font-semibold text-slate-800">{{ $title }}</h2>
+@forelse ($series as $tryoutSeries)
+    <section class="mt-10">
+        <div class="mb-4 flex flex-wrap items-center gap-3">
+            <h2 class="font-display text-2xl font-semibold text-slate-800">{{ $tryoutSeries->name }}</h2>
+            <span class="chip bg-lime-100 text-lime-800">{{ $tryoutSeries->type === 'wajib' ? 'Wajib' : 'Pilihan' }}</span>
+        </div>
 
-    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        @forelse ($subjects->get($type, collect()) as $subject)
+        <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        @forelse ($seriesSubjects->get($tryoutSeries->id, collect()) as $subject)
             @php
-                $act = $active->get($subject->id);
-                $score = $best->get($subject->id);
+                $sessionKey = $tryoutSeries->id.':'.$subject->id;
+                $act = $active->get($sessionKey);
+                $score = $best->get($sessionKey);
                 $tint = $tints[$n++ % count($tints)];
             @endphp
             <div class="card flex flex-col">
                 <div class="mb-4 flex items-start justify-between gap-2">
-                    <div class="grid h-12 w-12 place-items-center rounded-2xl {{ $tint }}"><i data-lucide="book-open" class="h-6 w-6"></i></div>
+                    <div class="grid h-12 w-12 place-items-center rounded-lg {{ $tint }}"><i data-lucide="book-open" class="h-6 w-6"></i></div>
 
                     @if ($act)
                         <span class="chip bg-amber-100 text-amber-700">
@@ -55,7 +60,7 @@
                     <span class="chip bg-slate-100 text-slate-600">{{ $subject->questions_count }} soal</span>
                 </div>
 
-                <form method="POST" action="{{ route('tryout.start', $subject) }}" class="mt-auto pt-5">@csrf
+                <form method="POST" action="{{ route('tryout.start', [$tryoutSeries, $subject]) }}" class="mt-auto pt-5">@csrf
                     @if ($subject->questions_count === 0)
                         <button type="button" disabled class="btn-soft w-full opacity-60">Segera hadir</button>
                     @else
@@ -67,8 +72,11 @@
                 </form>
             </div>
         @empty
-            <p class="text-slate-400">Belum ada mata pelajaran di kategori ini.</p>
+            <p class="text-slate-400">Belum ada mata pelajaran di series ini.</p>
         @endforelse
-    </div>
-@endforeach
+        </div>
+    </section>
+@empty
+    <div class="card mt-8 text-center text-slate-500">Belum ada tryout series yang aktif.</div>
+@endforelse
 @endsection

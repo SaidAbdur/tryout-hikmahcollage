@@ -3,44 +3,97 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Mail\StudentRegistered;
 use App\Models\Student;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class StudentAuthController extends Controller
 {
     public function showRegister()
     {
-        return view('auth.register');
+        return view('auth.registration');
     }
 
     public function register(Request $request): RedirectResponse
     {
-        $data = $request->validate(Student::rules());
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'region' => ['required', 'string', 'max:255'],
+            'school' => ['required', 'string', 'max:255'],
+            'dob' => ['required', 'date', 'before:today'],
+            'gender' => ['required', 'in:Laki-laki,Perempuan'],
+            'parent_name' => ['required', 'string', 'max:255'],
+            'parent_phone' => ['required', 'string', 'max:30'],
+            'parent_email' => ['required', 'email', 'max:255'],
+            'package_type' => ['required', 'in:free,paid'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
 
-        $student = Student::create($data + ['student_id' => Student::generateStudentId()]);
+        do {
+            $studentId = 'STU'.now()->format('Y').Str::upper(Str::random(6));
+        } while (Student::where('student_id', $studentId)->exists());
 
-        // Parent email is optional, so the verification mail only goes out when it was given.
-        if ($student->parent_email) {
-            try {
-                Mail::to($student->parent_email)->send(new StudentRegistered($student));
-            } catch (\Throwable $e) {
-                report($e); // a mail outage must not block registration
-            }
-        }
+        $student = Student::create([
+            ...$data,
+            'student_id' => $studentId,
+            'age' => Carbon::parse($data['dob'])->age,
+            'password' => Hash::make($data['password']),
+            'account_status' => 'pending',
+        ]);
 
-        return redirect()->route('login')->with('registered', $student->student_id);
+        $request->session()->put('registration_student_id', $student->id);
+
+        return redirect()->route('registration.proofs');
     }
 
-    public function verify(Student $student): RedirectResponse
+    public function showProofUpload(Request $request)
     {
-        $student->forceFill(['email_verified_at' => now()])->save();
+        $student = $this->registrationStudent($request);
 
-        return redirect()->route('login')->with('status', 'Email berhasil diverifikasi. Selamat belajar! 🎉');
+        return view('auth.proofs', compact('student'));
+    }
+
+    public function uploadProofs(Request $request): RedirectResponse
+    {
+        $student = $this->registrationStudent($request);
+        $count = $student->package_type === 'free' ? 5 : 1;
+        $data = $request->validate([
+            'proofs' => ['required', 'array', 'size:'.$count],
+            'proofs.*' => ['required', 'image', 'max:5120'],
+        ]);
+
+        $paths = collect($data['proofs'])
+            ->map(fn ($file) => $file->store('proofs', 'local'))
+            ->all();
+
+        $student->update(['proof_files' => $paths]);
+        Auth::guard('student')->login($student);
+        $request->session()->regenerate();
+        $request->session()->forget('registration_student_id');
+
+        return redirect()->route('registration.waiting');
+    }
+
+    public function showWaiting(Request $request)
+    {
+        $student = Auth::guard('student')->user();
+
+        if ($student->account_status === 'approved') {
+            return redirect()->route('dashboard');
+        }
+
+        if ($student->account_status === 'rejected') {
+            Auth::guard('student')->logout();
+
+            return redirect()->route('login')->withErrors(['login' => 'Pendaftaran Anda belum disetujui. Hubungi Admin untuk informasi lebih lanjut.']);
+        }
+
+        return view('auth.waiting', compact('student'));
     }
 
     public function showLogin()
@@ -50,12 +103,27 @@ class StudentAuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $request->validate(['student_id' => ['required', 'string', 'max:20']]);
+        $credentials = $request->validate([
+            'login' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string'],
+        ]);
 
-        $student = Student::where('student_id', Str::upper(trim($request->student_id)))->first();
+        $identifier = trim($credentials['login']);
+        $student = Student::where('student_id', Str::upper($identifier))
+            ->orWhereRaw('LOWER(parent_email) = ?', [Str::lower($identifier)])
+            ->get()
+            ->first(fn (Student $candidate) => Hash::check($credentials['password'], $candidate->password));
 
         if (! $student) {
-            return back()->withErrors(['student_id' => 'Student ID tidak ditemukan. Cek lagi ya!'])->onlyInput('student_id');
+            return back()->withErrors(['login' => 'Student ID/email atau password salah.'])->onlyInput('login');
+        }
+
+        if ($student->account_status === 'pending') {
+            return back()->withErrors(['login' => 'Akun Anda sedang dalam proses verifikasi oleh Admin.'])->onlyInput('login');
+        }
+
+        if ($student->account_status !== 'approved') {
+            return back()->withErrors(['login' => 'Akun Anda belum disetujui Admin.'])->onlyInput('login');
         }
 
         Auth::guard('student')->login($student);
@@ -70,5 +138,14 @@ class StudentAuthController extends Controller
         $request->session()->regenerateToken(); // no invalidate(): an admin may be signed in on the same browser
 
         return redirect()->route('home');
+    }
+
+    private function registrationStudent(Request $request): Student
+    {
+        $student = Student::whereKey($request->session()->get('registration_student_id'))->first();
+
+        abort_unless($student && $student->account_status === 'pending', 404);
+
+        return $student;
     }
 }

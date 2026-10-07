@@ -44,19 +44,26 @@
 
             <div class="mt-6 space-y-3" role="radiogroup">
                 <template x-for="(text, key) in q.options" :key="q.id + key">
-                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition hover:-translate-y-0.5 hover:border-violet-300 focus-within:ring-4 focus-within:ring-violet-100"
-                           :class="answers[q.id] && answers[q.id].o === key ? 'border-violet-400 bg-violet-50 shadow-md shadow-violet-100' : 'border-slate-200 bg-white'">
-                        <input type="radio" class="sr-only" :name="'q' + q.id" :checked="answers[q.id] && answers[q.id].o === key" @change="choose(key)">
-                        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl font-extrabold transition"
-                              :class="answers[q.id] && answers[q.id].o === key ? 'bg-violet-500 text-white' : 'bg-slate-100 text-slate-500'" x-text="key"></span>
+                        <label class="mb-3 block cursor-pointer rounded-xl border-2 p-4 transition hover:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100"
+                           :class="answers[q.id] && answers[q.id].o === key ? 'border-blue-600 bg-blue-50 shadow-md shadow-blue-100' : 'border-slate-200 bg-white'">
+                        <span class="flex items-start gap-3">
+                            <input type="radio" class="mt-1 h-6 w-6 shrink-0 cursor-pointer accent-blue-600" :name="'q' + q.id" :checked="answers[q.id] && answers[q.id].o === key" @change="choose(key)">
+                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl font-extrabold transition"
+                                  :class="answers[q.id] && answers[q.id].o === key ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'" x-text="key"></span>
                         <span class="whitespace-pre-line pt-1 font-semibold" x-text="text"></span>
+                        </span>
                     </label>
                 </template>
             </div>
 
             <div class="mt-8 flex justify-between gap-3">
                 <button type="button" class="btn-soft" @click="go(i - 1)" :disabled="i === 0"><i data-lucide="chevron-left" class="h-5 w-5"></i> Sebelumnya</button>
-                <button type="button" class="btn-primary" @click="go(i + 1)" :disabled="i === qs.length - 1">Berikutnya <i data-lucide="chevron-right" class="h-5 w-5"></i></button>
+                <template x-if="i < qs.length - 1">
+                    <button type="button" class="btn-primary" @click="go(i + 1)">Berikutnya <i data-lucide="chevron-right" class="h-5 w-5"></i></button>
+                </template>
+                <template x-if="i === qs.length - 1">
+                    <button type="button" class="btn-primary" @click="confirming = true"><i data-lucide="send" class="h-4 w-4"></i> Selesai</button>
+                </template>
             </div>
         </section>
 
@@ -70,14 +77,14 @@
                     <button type="button" @click="go(n)" x-text="n + 1"
                             class="grid h-10 cursor-pointer place-items-center rounded-xl text-sm font-extrabold transition hover:-translate-y-0.5"
                             :class="[
-                                { answered: 'bg-emerald-400 text-white', flagged: 'bg-amber-300 text-amber-900', empty: 'border border-slate-200 bg-white text-slate-500' }[state(item.id)],
+                                { answered: 'bg-blue-600 text-white', flagged: 'bg-amber-300 text-amber-900', empty: 'border border-slate-200 bg-white text-slate-500' }[state(item.id)],
                                 n === i ? 'ring-4 ring-violet-300' : ''
                             ]"></button>
                 </template>
             </div>
 
             <div class="mt-5 flex flex-wrap gap-2 text-xs font-bold">
-                <span class="chip bg-emerald-100 text-emerald-700">Terjawab</span>
+                <span class="chip bg-blue-100 text-blue-700">Terjawab</span>
                 <span class="chip bg-amber-100 text-amber-700">Ragu-ragu (<span x-text="flagged"></span>)</span>
                 <span class="chip bg-slate-100 text-slate-500">Kosong</span>
             </div>

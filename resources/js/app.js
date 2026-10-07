@@ -5,6 +5,7 @@ import {
     GraduationCap, History, LayoutDashboard, Lightbulb, LogIn, LogOut, Pencil, Play, Rocket,
     RotateCcw, School, Search, Send, Sparkles, Star, Timer, Trash2, TrendingUp, Trophy, UserPlus, Users,
     ChevronLeft, ChevronRight,
+    Plus,
 } from 'lucide';
 import registerComponents from './components';
 
@@ -22,5 +23,6 @@ createIcons({
         GraduationCap, History, LayoutDashboard, Lightbulb, LogIn, LogOut, Pencil, Play, Rocket,
         RotateCcw, School, Search, Send, Sparkles, Star, Timer, Trash2, TrendingUp, Trophy, UserPlus, Users,
         ChevronLeft, ChevronRight,
+        Plus,
     },
 });

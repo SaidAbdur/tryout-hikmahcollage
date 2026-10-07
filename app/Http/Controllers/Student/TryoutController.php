@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Question;
 use App\Models\StudentAnswer;
 use App\Models\Subject;
+use App\Models\TryoutSeries;
 use App\Models\TryoutSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -15,17 +16,22 @@ use Illuminate\Validation\Rule;
 
 class TryoutController extends Controller
 {
-    public function start(Subject $subject): RedirectResponse
+    public function start(TryoutSeries $tryoutSeries, Subject $subject): RedirectResponse
     {
-        if ($subject->questions()->doesntExist()) {
+        $expectedSubjectType = $tryoutSeries->type === 'wajib' ? 'mandatory' : 'elective';
+        abort_unless($tryoutSeries->status === 'active' && $subject->type === $expectedSubjectType, 404);
+
+        if (! $subject->questions()->where('tryout_series_id', $tryoutSeries->id)->exists()) {
             return back()->with('error', 'Soal untuk mapel ini belum tersedia.');
         }
 
         $student = Auth::guard('student')->user();
+        abort_unless($student->account_status === 'approved', 403);
 
         $session = TryoutSession::with('subject')
             ->where('student_id', $student->id)
             ->where('subject_id', $subject->id)
+            ->where('tryout_series_id', $tryoutSeries->id)
             ->where('status', 'in_progress')
             ->first();
 
@@ -38,6 +44,7 @@ class TryoutController extends Controller
         $session ??= TryoutSession::create([
             'student_id' => $student->id,
             'subject_id' => $subject->id,
+            'tryout_series_id' => $tryoutSeries->id,
             'started_at' => now(),
             'status' => 'in_progress',
         ]);
@@ -61,14 +68,14 @@ class TryoutController extends Controller
         $session->load('subject');
 
         // The correct option and explanation are deliberately NOT sent to the browser.
-        $questions = $session->subject->questions()->orderBy('id')->get()->map(fn (Question $q) => [
+        $questions = $session->subject->questions()->where('tryout_series_id', $session->tryout_series_id)->orderBy('id')->get()->map(fn (Question $q) => [
             'id' => $q->id,
             'text' => $q->question_text,
             'options' => $q->options(),
         ])->values();
 
         $answers = $session->answers()->get()->mapWithKeys(fn ($a) => [
-            $a->question_id => ['o' => $a->selected_option, 'f' => $a->is_flagged],
+            $a->question_id => ['o' => $a->answered_option, 'f' => $a->is_flagged],
         ]);
 
         return view('student.exam', [
@@ -89,7 +96,9 @@ class TryoutController extends Controller
         }
 
         $data = $request->validate([
-            'question_id' => ['required', Rule::exists('questions', 'id')->where('subject_id', $session->subject_id)],
+            'question_id' => ['required', Rule::exists('questions', 'id')
+                ->where('subject_id', $session->subject_id)
+                ->where('tryout_series_id', $session->tryout_series_id)],
             'selected_option' => ['nullable', Rule::in(['A', 'B', 'C', 'D', 'E'])],
             'is_flagged' => ['boolean'],
         ]);
@@ -100,7 +109,7 @@ class TryoutController extends Controller
         StudentAnswer::updateOrCreate(
             ['tryout_session_id' => $session->id, 'question_id' => $question->id],
             [
-                'selected_option' => $picked,
+                'answered_option' => $picked,
                 'is_correct' => $picked !== null && $picked === $question->correct_option,
                 'is_flagged' => $request->boolean('is_flagged'),
             ],
@@ -125,17 +134,20 @@ class TryoutController extends Controller
             return redirect()->route('tryout.show', $session);
         }
 
-        $session->load('subject');
-        $questions = $session->subject->questions()->orderBy('id')->get();
-        $answers = $session->answers()->get()->keyBy('question_id');
-        $total = $questions->count();
+        $showReview = Auth::guard('student')->user()->package_type === 'paid';
+        $total = $session->subject->questions()->where('tryout_series_id', $session->tryout_series_id)->count();
+        $questions = $showReview
+            ? $session->subject->questions()->where('tryout_series_id', $session->tryout_series_id)->orderBy('id')->get()
+            : collect();
+        $answers = $showReview ? $session->answers()->get()->keyBy('question_id') : collect();
         $unanswered = max(0, $total - $session->total_correct - $session->total_wrong);
 
-        return view('student.result', compact('session', 'questions', 'answers', 'total', 'unanswered'));
+        return view('student.result', compact('session', 'questions', 'answers', 'total', 'unanswered', 'showReview'));
     }
 
     private function own(TryoutSession $session): void
     {
         abort_if($session->student_id != Auth::guard('student')->id(), 403);
+        abort_unless(Auth::guard('student')->user()->account_status === 'approved', 403);
     }
 }

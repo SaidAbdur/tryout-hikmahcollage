@@ -2,7 +2,7 @@
 @section('title', 'Sign in')
 
 @section('content')
-<form method="POST" action="{{ route('admin.login') }}" class="card w-full max-w-sm">
+<form method="POST" action="{{ route('admin.login.store') }}" class="card w-full max-w-sm">
     @csrf
     <div class="mb-6 text-center">
         <span class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-violet-500 text-white"><i data-lucide="graduation-cap" class="h-7 w-7"></i></span>

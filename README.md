@@ -1,4 +1,4 @@
-# TryoutKu: online tryout system (Laravel 12)
+# Hikmah College: online tryout system
 
 This folder is an **overlay**: it holds only the files that are new or replaced. Copy it over a fresh Laravel 12 project.
 
@@ -47,7 +47,7 @@ This folder is an **overlay**: it holds only the files that are new or replaced.
    composer run dev           # or: php artisan serve + npm run dev
    ```
 
-Student area: `/`  |  Admin area: `/admin` (admin@tryoutku.test / password, **change it**).
+Student area: `/login` and `/dashboard`  |  Admin area: `/admin` (admin@tryoutku.test / password, **change it**).
 
 ## What is where
 
@@ -55,22 +55,17 @@ Student area: `/`  |  Admin area: `/admin` (admin@tryoutku.test / password, **ch
 |---|---|
 | Routes | `routes/web.php` |
 | Guards (student and admin) | `config/auth.php`, `bootstrap/app.php` |
-| Schema | `database/migrations/2026_10_01_00000*` (payment tables are in `..._000004`) |
-| Exam engine | `Student/TryoutController.php`, `TryoutSession.php`, `resources/js/components.js` (`exam`) |
+| Schema | `database/migrations/*` |
+| Exam engine | `app/Http/Controllers/Student/TryoutController.php`, `TryoutSession.php`, `resources/js/components.js` (`exam`) |
 | Admin | `app/Http/Controllers/Admin/*`, `resources/views/admin/*` |
 | Sample subjects and questions | `database/seeders/SubjectSeeder.php` |
 
-## Behaviour worth knowing
+## Current flows
 
-- **Student ID**: `STU-<year>-<4 random characters>`. Random (not sequential) because the ID is the only login credential. Login is rate limited to 10 attempts per minute.
-- **Verification email**: sent to the parent email only when one was entered (the field is optional). Verifying is not required to log in.
-- **Timer**: the server stores `started_at` and computes the deadline, so refreshing the page or changing the device clock does not extend the exam. Every click is saved immediately; when time runs out the browser submits, and if the tab was closed the session is graded the next time the student, or the monitoring page, loads.
-- **Answer keys** and explanations are never sent to the browser during an exam, only on the result page.
-- **Live monitoring** polls every 8 seconds. For push updates later, Laravel Reverb can replace the polling.
-- **Extra column**: `student_answers.is_flagged` stores the "ragu-ragu" marker so it survives a refresh.
-- **UI language**: student pages are Indonesian, admin pages are English; strings are inline in the Blade files.
-
-## Not included yet
-
-- Admin screens to add or import questions (the seeder holds 9 sample questions). A quick option is to add Filament for the `subjects` and `questions` tables.
-- Payment flow: `packages`, `transactions` and `subscriptions` exist with models, but nothing uses them yet.
+- Registration collects student and parent details, a user-created password, and a Free or Paid (Rp 29.000) package choice.
+- Free registrations must upload exactly five WhatsApp-sharing screenshots; Paid registrations must upload one transfer screenshot. Files are stored on Laravel's private local disk and only admins can view them.
+- Every new account starts as `pending`. Admins review proofs under `/admin/students/pending` and approve or reject the registration. Only approved accounts can log in.
+- Students sign in with their generated Student ID or parent email and their registration password. Approved students land on the dashboard and start a tryout directly from a subject card; no exam token is used.
+- Admins manage subject-linked questions from `/admin/questions` and view registration counts from `/admin`.
+- The server stores each tryout's start time and calculates its deadline. Answers are saved on each change, and answer keys are only shown on the result page.
+- `students.proof_files` stores private image paths as JSON. `questions.subject_id` links each question to its subject. The legacy `tokens` table is dropped by the migration.

@@ -7,25 +7,29 @@
 @theme {
   --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Fredoka', 'Nunito', ui-rounded, system-ui, sans-serif;
+  --color-hikmah-blue: #2563eb;
+  --color-hikmah-bluedark: #1d4ed8;
+  --color-hikmah-neon: #a3e635;
+  --color-hikmah-neondark: #84cc16;
 }
 
 [x-cloak] { display: none !important; }
 
 @layer components {
-  .card { @apply rounded-3xl bg-white/90 p-6 shadow-lg shadow-violet-100/70 ring-1 ring-white; }
+  .card { @apply rounded-xl border border-slate-200 bg-white p-6 shadow-sm; }
 
   .btn-primary, .btn-soft, .btn-danger {
     @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold
            transition duration-200 hover:-translate-y-0.5 active:translate-y-0
            focus:outline-none focus-visible:ring-4 disabled:cursor-not-allowed disabled:hover:translate-y-0;
   }
-  .btn-primary { @apply bg-violet-500 text-white shadow-md shadow-violet-200 hover:bg-violet-600 focus-visible:ring-violet-200; }
-  .btn-soft    { @apply bg-violet-100 text-violet-700 hover:bg-violet-200 focus-visible:ring-violet-100; }
+  .btn-primary { @apply bg-blue-700 text-white shadow-sm hover:bg-blue-800 focus-visible:ring-blue-200; }
+  .btn-soft    { @apply bg-blue-50 text-blue-800 hover:bg-blue-100 focus-visible:ring-blue-100; }
   .btn-danger  { @apply bg-rose-100 text-rose-600 hover:bg-rose-200 focus-visible:ring-rose-100; }
 
   .input {
     @apply w-full rounded-2xl border-2 border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 outline-none
-           transition placeholder:font-normal placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100;
+           transition placeholder:font-normal placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100;
   }
   .label { @apply mb-1 block text-sm font-bold text-slate-600; }
   .chip  { @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold; }

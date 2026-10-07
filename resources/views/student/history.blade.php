@@ -9,6 +9,7 @@
     <div class="card mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="font-display text-xl font-semibold text-slate-800">{{ $s->subject->name }}</h2>
+            <p class="text-sm font-bold text-blue-700">{{ $s->tryoutSeries->name }}</p>
             <p class="text-sm font-semibold text-slate-500">{{ $s->submitted_at->format('d M Y, H:i') }}</p>
             <div class="mt-2 flex flex-wrap gap-2">
                 <span class="chip {{ $badgeClass }}">{{ $emoji }} {{ $label }}</span>
